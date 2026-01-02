@@ -1,165 +1,99 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Formik, Form, Field, ErrorMessage } from "formik";
+import * as Yup from "yup";
 import type { NoteTag } from "@/types/note";
-import { useNoteStore } from "@/lib/store/noteStore";
 import css from "./NoteForm.module.css";
 
-interface NoteFormProps {
-  onSubmit: (formData: FormData) => Promise<void>;
+interface NoteFormValues {
+  title: string;
+  content: string;
+  tag: NoteTag;
 }
 
-export default function NoteForm({ onSubmit }: NoteFormProps) {
-  const router = useRouter();
-  const { draft, setDraft } = useNoteStore();
-  const [errors, setErrors] = useState<{
-    title?: string;
-    content?: string;
-  }>({});
+interface NoteFormProps {
+  onSubmit: (values: NoteFormValues) => void;
+  onCancel: () => void;
+}
 
-  const [formData, setFormData] = useState({
-    title: draft.title,
-    content: draft.content,
-    tag: draft.tag,
-  });
+const validationSchema = Yup.object({
+  title: Yup.string()
+    .min(3, "Title must be at least 3 characters")
+    .max(50, "Title must be at most 50 characters")
+    .required("Title is required"),
+  content: Yup.string().max(500, "Content must be at most 500 characters"),
+  tag: Yup.string()
+    .oneOf(["Todo", "Work", "Personal", "Meeting", "Shopping"])
+    .required("Tag is required"),
+});
 
-  useEffect(() => {
-    setFormData({
-      title: draft.title,
-      content: draft.content,
-      tag: draft.tag,
-    });
-  }, [draft]);
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    const updatedFormData = { ...formData, [name]: value };
-    setFormData(updatedFormData);
-    setDraft({
-      title: updatedFormData.title,
-      content: updatedFormData.content,
-      tag: updatedFormData.tag as NoteTag,
-    });
-
-    if (name === "title") {
-      if (value.length < 3) {
-        setErrors((prev) => ({
-          ...prev,
-          title: "Title must be at least 3 characters",
-        }));
-      } else if (value.length > 50) {
-        setErrors((prev) => ({
-          ...prev,
-          title: "Title must be at most 50 characters",
-        }));
-      } else {
-        setErrors((prev) => ({ ...prev, title: undefined }));
-      }
-    }
-
-    if (name === "content") {
-      if (value.length > 500) {
-        setErrors((prev) => ({
-          ...prev,
-          content: "Content must be at most 500 characters",
-        }));
-      } else {
-        setErrors((prev) => ({ ...prev, content: undefined }));
-      }
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    const newErrors: { title?: string; content?: string } = {};
-    if (!formData.title) {
-      newErrors.title = "Title is required";
-    } else if (formData.title.length < 3) {
-      newErrors.title = "Title must be at least 3 characters";
-    } else if (formData.title.length > 50) {
-      newErrors.title = "Title must be at most 50 characters";
-    }
-
-    if (formData.content.length > 500) {
-      newErrors.content = "Content must be at most 500 characters";
-    }
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-
-    const formDataObj = new FormData();
-    formDataObj.append("title", formData.title);
-    formDataObj.append("content", formData.content);
-    formDataObj.append("tag", formData.tag);
-
-    await onSubmit(formDataObj);
-  };
-
-  const handleCancel = () => {
-    router.back();
+export default function NoteForm({ onSubmit, onCancel }: NoteFormProps) {
+  const initialValues: NoteFormValues = {
+    title: "",
+    content: "",
+    tag: "Todo",
   };
 
   return (
-    <form className={css.form} onSubmit={handleSubmit}>
-      <div className={css.formGroup}>
-        <label htmlFor="title">Title</label>
-        <input
-          id="title"
-          type="text"
-          name="title"
-          value={formData.title}
-          onChange={handleChange}
-          className={css.input}
-        />
-        {errors.title && <span className={css.error}>{errors.title}</span>}
-      </div>
+    <Formik
+      initialValues={initialValues}
+      validationSchema={validationSchema}
+      onSubmit={onSubmit}
+    >
+      {({ isSubmitting }) => (
+        <Form className={css.form}>
+          <div className={css.formGroup}>
+            <label htmlFor="title">Title</label>
+            <Field id="title" type="text" name="title" className={css.input} />
+            <ErrorMessage name="title" component="span" className={css.error} />
+          </div>
 
-      <div className={css.formGroup}>
-        <label htmlFor="content">Content</label>
-        <textarea
-          id="content"
-          name="content"
-          value={formData.content}
-          onChange={handleChange}
-          rows={8}
-          className={css.textarea}
-        />
-        {errors.content && <span className={css.error}>{errors.content}</span>}
-      </div>
+          <div className={css.formGroup}>
+            <label htmlFor="content">Content</label>
+            <Field
+              id="content"
+              name="content"
+              as="textarea"
+              rows={8}
+              className={css.textarea}
+            />
+            <ErrorMessage
+              name="content"
+              component="span"
+              className={css.error}
+            />
+          </div>
 
-      <div className={css.formGroup}>
-        <label htmlFor="tag">Tag</label>
-        <select
-          id="tag"
-          name="tag"
-          value={formData.tag}
-          onChange={handleChange}
-          className={css.select}
-        >
-          <option value="Todo">Todo</option>
-          <option value="Work">Work</option>
-          <option value="Personal">Personal</option>
-          <option value="Meeting">Meeting</option>
-          <option value="Shopping">Shopping</option>
-        </select>
-      </div>
+          <div className={css.formGroup}>
+            <label htmlFor="tag">Tag</label>
+            <Field id="tag" name="tag" as="select" className={css.select}>
+              <option value="Todo">Todo</option>
+              <option value="Work">Work</option>
+              <option value="Personal">Personal</option>
+              <option value="Meeting">Meeting</option>
+              <option value="Shopping">Shopping</option>
+            </Field>
+            <ErrorMessage name="tag" component="span" className={css.error} />
+          </div>
 
-      <div className={css.actions}>
-        <button type="button" className={css.cancelButton} onClick={handleCancel}>
-          Cancel
-        </button>
-        <button type="submit" className={css.submitButton}>
-          Create note
-        </button>
-      </div>
-    </form>
+          <div className={css.actions}>
+            <button
+              type="button"
+              className={css.cancelButton}
+              onClick={onCancel}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className={css.submitButton}
+              disabled={isSubmitting}
+            >
+              Create note
+            </button>
+          </div>
+        </Form>
+      )}
+    </Formik>
   );
 }

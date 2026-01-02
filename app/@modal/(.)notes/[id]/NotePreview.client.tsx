@@ -10,7 +10,7 @@ interface NotePreviewProps {
   noteId: string;
 }
 
-export default function NotePreviewClient({ noteId }: NotePreviewProps) {
+export default function NotePreview({ noteId }: NotePreviewProps) {
   const router = useRouter();
 
   const { data: note, isLoading, error } = useQuery({
