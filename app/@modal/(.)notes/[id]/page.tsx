@@ -1,4 +1,4 @@
-import NotePreview from "@/components/NotePreview/NotePreview";
+import NotePreviewClient from "./NotePreview.client";
 
 interface PageProps {
   params: Promise<{
@@ -9,5 +9,5 @@ interface PageProps {
 export default async function InterceptedNotePage({ params }: PageProps) {
   const resolvedParams = await params;
 
-  return <NotePreview noteId={resolvedParams.id} />;
+  return <NotePreviewClient noteId={resolvedParams.id} />;
 }
