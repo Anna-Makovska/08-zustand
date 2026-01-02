@@ -1,15 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 import css from "./FilteredNotes.module.css";
 import NoteList from "@/components/NoteList/NoteList";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import Pagination from "@/components/Pagination/Pagination";
-import Modal from "@/components/Modal/Modal";
-import NoteForm from "@/components/NoteForm/NoteForm";
-import { fetchNotes, createNote, deleteNote } from "@/lib/api";
+import { fetchNotes, deleteNote } from "@/lib/api";
 
 interface FilteredNotesClientProps {
   tag: string;
@@ -18,7 +17,6 @@ interface FilteredNotesClientProps {
 export default function FilteredNotesClient({ tag }: FilteredNotesClientProps) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [debouncedSearch] = useDebounce(search, 300);
 
   const queryClient = useQueryClient();
@@ -26,14 +24,7 @@ export default function FilteredNotesClient({ tag }: FilteredNotesClientProps) {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["notes", page, debouncedSearch, tag],
     queryFn: () => fetchNotes({ page, perPage: 12, search: debouncedSearch, tag }),
-  });
-
-  const createMutation = useMutation({
-    mutationFn: createNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      setIsModalOpen(false);
-    },
+    placeholderData: keepPreviousData,
   });
 
   const deleteMutation = useMutation({
@@ -42,14 +33,6 @@ export default function FilteredNotesClient({ tag }: FilteredNotesClientProps) {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
     },
   });
-
-  const handleCreateNote = (values: {
-    title: string;
-    content: string;
-    tag: "Todo" | "Work" | "Personal" | "Meeting" | "Shopping";
-  }) => {
-    createMutation.mutate(values);
-  };
 
   const handleDeleteNote = (noteId: string) => {
     deleteMutation.mutate(noteId);
@@ -68,24 +51,15 @@ export default function FilteredNotesClient({ tag }: FilteredNotesClientProps) {
             onPageChange={setPage}
           />
         )}
-        <button className={css.button} onClick={() => setIsModalOpen(true)}>
+        <Link href="/notes/action/create" className={css.button}>
           Create note +
-        </button>
+        </Link>
       </div>
 
       {isLoading && <div>Loading...</div>}
       {isError && <div>Error loading notes</div>}
       {data && data.notes.length > 0 && (
         <NoteList notes={data.notes} onDelete={handleDeleteNote} />
-      )}
-
-      {isModalOpen && (
-        <Modal onClose={() => setIsModalOpen(false)}>
-          <NoteForm
-            onSubmit={handleCreateNote}
-            onCancel={() => setIsModalOpen(false)}
-          />
-        </Modal>
       )}
     </main>
   );
