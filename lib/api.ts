@@ -17,6 +17,7 @@ interface FetchNotesParams {
   page?: number;
   perPage?: number;
   search?: string;
+  tag?: string;
 }
 
 interface CreateNoteParams {
@@ -36,17 +37,23 @@ interface DeleteNoteResponse {
 export const fetchNotes = async (
   params: FetchNotesParams = {}
 ): Promise<FetchNotesResponse> => {
-  const { page = 1, perPage = 12, search = "" } = params;
+  const { page = 1, perPage = 12, search = "", tag } = params;
+
+  const queryParams: Record<string, string | number> = {
+    page,
+    perPage,
+    search,
+  };
+
+  if (tag && tag !== "all") {
+    queryParams.tag = tag;
+  }
 
   const response = await axios.get<FetchNotesResponse>("/notes", {
     headers: {
       Authorization: `Bearer ${token}`,
     },
-    params: {
-      page,
-      perPage,
-      search,
-    },
+    params: queryParams,
   });
 
   return response.data;
