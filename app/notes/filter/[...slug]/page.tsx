@@ -5,13 +5,13 @@ import FilteredNotesClient from "./FilteredNotes.client";
 
 interface PageProps {
   params: Promise<{
-    tag: string;
+    slug: string[];
   }>;
 }
 
 export default async function FilteredNotesPage({ params }: PageProps) {
   const resolvedParams = await params;
-  const tag = resolvedParams.tag;
+  const tag = resolvedParams.slug[0] || "all";
 
   const queryClient = getQueryClient();
 
