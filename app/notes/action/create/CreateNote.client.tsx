@@ -34,11 +34,15 @@ export default function CreateNoteClient() {
     });
   };
 
+  const handleCancel = () => {
+    router.back();
+  };
+
   return (
     <main className={css.main}>
       <div className={css.container}>
         <h1 className={css.title}>Create note</h1>
-        <NoteForm onSubmit={handleSubmit} />
+        <NoteForm onSubmit={handleSubmit} onCancel={handleCancel} />
       </div>
     </main>
   );

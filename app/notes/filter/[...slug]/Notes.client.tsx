@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   useQuery,
   useMutation,
@@ -12,9 +13,7 @@ import css from "./Notes.module.css";
 import NoteList from "@/components/NoteList/NoteList";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import Pagination from "@/components/Pagination/Pagination";
-import Modal from "@/components/Modal/Modal";
-import NoteForm from "@/components/NoteForm/NoteForm";
-import { fetchNotes, createNote, deleteNote } from "@/lib/api";
+import { fetchNotes, deleteNote } from "@/lib/api";
 
 interface NotesClientProps {
   tag: string;
@@ -23,7 +22,6 @@ interface NotesClientProps {
 export default function NotesClient({ tag }: NotesClientProps) {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [debouncedSearch] = useDebounce(search, 300);
 
   const queryClient = useQueryClient();
@@ -34,28 +32,12 @@ export default function NotesClient({ tag }: NotesClientProps) {
     placeholderData: keepPreviousData,
   });
 
-  const createMutation = useMutation({
-    mutationFn: createNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      setIsModalOpen(false);
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: deleteNote,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
     },
   });
-
-  const handleCreateNote = (values: {
-    title: string;
-    content: string;
-    tag: "Todo" | "Work" | "Personal" | "Meeting" | "Shopping";
-  }) => {
-    createMutation.mutate(values);
-  };
 
   const handleDeleteNote = (noteId: string) => {
     deleteMutation.mutate(noteId);
@@ -74,24 +56,15 @@ export default function NotesClient({ tag }: NotesClientProps) {
             onPageChange={setPage}
           />
         )}
-        <button className={css.button} onClick={() => setIsModalOpen(true)}>
+        <Link href="/notes/action/create" className={css.button}>
           Create note +
-        </button>
+        </Link>
       </div>
 
       {isLoading && <div>Loading...</div>}
       {isError && <div>Error loading notes</div>}
       {data && data.notes.length > 0 && (
         <NoteList notes={data.notes} onDelete={handleDeleteNote} />
-      )}
-
-      {isModalOpen && (
-        <Modal onClose={() => setIsModalOpen(false)}>
-          <NoteForm
-            onSubmit={handleCreateNote}
-            onCancel={() => setIsModalOpen(false)}
-          />
-        </Modal>
       )}
     </main>
   );
