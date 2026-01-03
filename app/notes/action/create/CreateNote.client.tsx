@@ -22,7 +22,8 @@ export default function CreateNoteClient() {
     },
   });
 
-  const handleSubmit = async (formData: FormData) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const formData = new FormData(e.currentTarget);
     const title = formData.get("title") as string;
     const content = formData.get("content") as string;
     const tag = formData.get("tag") as NoteTag;

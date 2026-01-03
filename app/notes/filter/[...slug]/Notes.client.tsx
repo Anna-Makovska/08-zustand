@@ -1,19 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  keepPreviousData,
-} from "@tanstack/react-query";
+import { useQuery, keepPreviousData } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 import css from "./Notes.module.css";
 import NoteList from "@/components/NoteList/NoteList";
 import SearchBox from "@/components/SearchBox/SearchBox";
 import Pagination from "@/components/Pagination/Pagination";
-import { fetchNotes, deleteNote } from "@/lib/api";
+import { fetchNotes } from "@/lib/api";
 
 interface NotesClientProps {
   tag: string;
@@ -24,24 +19,15 @@ export default function NotesClient({ tag }: NotesClientProps) {
   const [search, setSearch] = useState("");
   const [debouncedSearch] = useDebounce(search, 300);
 
-  const queryClient = useQueryClient();
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["notes", page, debouncedSearch, tag],
     queryFn: () => fetchNotes({ page, perPage: 12, search: debouncedSearch, tag }),
     placeholderData: keepPreviousData,
   });
-
-  const deleteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-    },
-  });
-
-  const handleDeleteNote = (noteId: string) => {
-    deleteMutation.mutate(noteId);
-  };
 
   const totalPages = data?.totalPages ?? 0;
 
@@ -63,9 +49,7 @@ export default function NotesClient({ tag }: NotesClientProps) {
 
       {isLoading && <div>Loading...</div>}
       {isError && <div>Error loading notes</div>}
-      {data && data.notes.length > 0 && (
-        <NoteList notes={data.notes} onDelete={handleDeleteNote} />
-      )}
+      {data && data.notes.length > 0 && <NoteList notes={data.notes} />}
     </main>
   );
 }

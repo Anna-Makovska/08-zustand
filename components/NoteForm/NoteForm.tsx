@@ -6,7 +6,7 @@ import { useNoteStore } from "@/lib/store/noteStore";
 import css from "./NoteForm.module.css";
 
 interface NoteFormProps {
-  onSubmit: (formData: FormData) => Promise<void>;
+  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
 }
 
@@ -23,8 +23,6 @@ export default function NoteForm({ onSubmit, onCancel }: NoteFormProps) {
     title: "",
     content: "",
   });
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     setFormData({
@@ -83,7 +81,7 @@ export default function NoteForm({ onSubmit, onCancel }: NoteFormProps) {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const titleError = validateField("title", formData.title);
@@ -97,18 +95,7 @@ export default function NoteForm({ onSubmit, onCancel }: NoteFormProps) {
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
-      const formDataObj = new FormData();
-      formDataObj.append("title", formData.title);
-      formDataObj.append("content", formData.content);
-      formDataObj.append("tag", formData.tag);
-
-      await onSubmit(formDataObj);
-    } finally {
-      setIsSubmitting(false);
-    }
+    onSubmit(e);
   };
 
   return (
@@ -160,11 +147,7 @@ export default function NoteForm({ onSubmit, onCancel }: NoteFormProps) {
         <button type="button" className={css.cancelButton} onClick={onCancel}>
           Cancel
         </button>
-        <button
-          type="submit"
-          className={css.submitButton}
-          disabled={isSubmitting}
-        >
+        <button type="submit" className={css.submitButton}>
           Create note
         </button>
       </div>
